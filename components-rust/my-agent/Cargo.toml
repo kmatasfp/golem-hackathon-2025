@@ -1,0 +1,41 @@
+[package]
+name = "my_agent"
+version = "0.0.1"
+edition = "2021"
+
+[package.metadata]
+
+[package.metadata.component]
+
+[package.metadata.component.target]
+path = "wit-generated"
+
+[package.metadata.component.target.dependencies]
+"wasi:io" = { path = "wit-generated/deps/io" }
+"wasi:clocks" = { path = "wit-generated/deps/clocks" }
+"golem:rpc" = { path = "wit-generated/deps/golem-rpc" }
+"golem:api" = { path = "wit-generated/deps/golem-1.x" }
+"golem:durability" = { path = "wit-generated/deps/golem_durability" }
+"golem:llm" = { path = "wit-generated/deps/golem_llm" }
+"wasi:random" = { path = "wit-generated/deps/random" }
+"wasi:filesystem" = { path = "wit-generated/deps/filesystem" }
+"wasi:sockets" = { path = "wit-generated/deps/sockets" }
+"wasi:cli" = { path = "wit-generated/deps/cli" }
+"wasi:http" = { path = "wit-generated/deps/http" }
+"my:agent-exports" = { path = "wit-generated/deps/my_agent-exports" }
+"wasi:logging" = { path = "wit-generated/deps/logging" }
+"root:component" = { path = "wit-generated/deps/root_component" }
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+required-features = []
+
+[dependencies]
+scraper = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+wit-bindgen-rt = { workspace = true }
+chrono = { version = "0.4.40", features = ["serde"] }
+url = { version = "2.5.4", features = ["serde"] }

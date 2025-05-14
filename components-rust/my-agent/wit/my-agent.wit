@@ -1,0 +1,42 @@
+package my:agent;
+
+// See https://component-model.bytecodealliance.org/design/wit.html for more details about the WIT syntax
+
+interface my-agent-api {
+	/// A chat exchange between user and agent
+	record exchange {
+    	prompt: string,
+    	response: string,
+	}
+
+	/// Sends a prompt to the agent
+	///
+	/// * `input`: User query
+	/// * returns: Agent response
+	prompt: func(input: string) -> string;
+
+	/// Adds reference materials for the agent
+	///
+	/// * `context`: User-provided documents, data, or attachments
+	add-context: func(context: string);
+
+	clear-contexts: func();
+
+	/// Retrieves conversation history
+	///
+	/// * returns: List of prompt/response pairs
+	get-history: func() -> list<exchange>;
+
+	/// Retrieves attached context materials
+	///
+	/// * returns: List of previously added context materials
+	get-contexts: func() -> list<string>;
+}
+
+
+world my-agent {
+  import wasi:http/outgoing-handler@0.2.0;
+  import golem:llm/llm@1.0.0;
+
+  export my-agent-api;
+}
