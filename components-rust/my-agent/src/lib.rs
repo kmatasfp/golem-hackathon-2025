@@ -1,6 +1,7 @@
 mod bindings;
 
 use crate::bindings::exports::my::agent_exports::my_agent_api::*;
+use crate::bindings::golem::llm::llm::{self, ChatEvent, CompleteResponse, ContentPart};
 use reqwest::{Client, Response};
 use scraper::{Html, Selector};
 use std::collections::HashMap;
@@ -17,6 +18,16 @@ static STATE: LazyLock<RwLock<State>> = LazyLock::new(|| {
         context: Vec::new(),
         history: Vec::new(),
     })
+});
+
+static LLM_CONFIG: LazyLock<llm::Config> = LazyLock::new(|| llm::Config {
+    model: "gpt-4.1-nano".to_string(),
+    temperature: Some(0.2),
+    tools: vec![],
+    provider_options: vec![],
+    max_tokens: None,
+    tool_choice: None,
+    stop_sequences: None,
 });
 
 struct Component;
@@ -50,18 +61,6 @@ impl Guest for Component {
     }
 
     fn prompt(input: String) -> String {
-        // let llm_response = llm::send(
-        //     &[llm::Message {
-        //         role: llm::Role::System,
-        //         name: None,
-        //         content: vec![llm::ContentPart::Text(input.clone())],
-        //     }],
-        //     &LLM_CONFIG,
-        // );
-
-        // let parsed_llm_response = "foo".to_string();
-        // let parsed_llm_response = parse_llm_response2(llm_response);
-
         if let Some(url) = extract_url(&input) {
             let content = download_html_body_from_url(&url).unwrap();
             Self::add_context(content);
@@ -72,7 +71,20 @@ impl Guest for Component {
             state.context.join(" ")
         };
 
-        let parsed_llm_response = ask_model(&input, &context).unwrap();
+        // let parsed_llm_response = ask_model(&input, &context).unwrap();
+
+        let prompt = format!("Query: {}\nContext: {}\nResponse:", &input, &context);
+
+        let llm_response = llm::send(
+            &[llm::Message {
+                role: llm::Role::System,
+                name: None,
+                content: vec![llm::ContentPart::Text(prompt)],
+            }],
+            &LLM_CONFIG,
+        );
+
+        let parsed_llm_response = parse_llm_response(llm_response);
 
         let exchange = Exchange {
             prompt: input,
@@ -158,6 +170,16 @@ fn download_html_body_from_url(url: &str) -> std::result::Result<String, String>
         Ok(cleaned_text)
     } else {
         Err("failed to parse body".to_string())
+    }
+}
+
+fn parse_llm_response(raw_response: ChatEvent) -> String {
+    match raw_response {
+        ChatEvent::Message(CompleteResponse { content, .. }) => match content.as_slice() {
+            [ContentPart::Text(text)] => text.to_string(),
+            _ => panic!("received unexpected content from llm"),
+        },
+        _ => panic!("received unexpected response from llm"),
     }
 }
 
